@@ -1,0 +1,21 @@
+# VS Code
+.vscode/
+
+# Python
+__pycache__/
+.venv/
+*.egg-info/
+uv.lock
+.pytest_cache/
+
+# MacOS
+.DS_STORE
+
+# Credentials
+*.env
+
+# Logs/results
+logs/
+results/
+ihbenchmark-vis/data/*.csv
+ihbenchmark-vis/data/*.parquet

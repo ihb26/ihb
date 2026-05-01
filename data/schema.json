@@ -1,0 +1,67 @@
+{
+    "$id": "schema.json",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Prompt Set Schema",
+    "type": "object",
+    "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "controls": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/Prompt" }
+        },
+        "attacks": {
+            "type": "array",
+            "items": { "$ref": "#/$defs/Prompt" }
+        }
+    },
+    "$defs": {
+        "Prompt": {
+            "type": "object",
+            "properties": {
+                "name": { "type": "string" },
+                "category": { "type": "string" },
+                "subcategory": { "type": "string" },
+                "system_prompt": { "type": "string" },
+                "user_prompt": {
+                    "oneOf": [
+                        { "type": "string" },
+                        {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": { "type": ["array", "string"] }
+                            }
+                        },
+                        { "type": "null" }
+                    ]
+                },
+                "user_image_path": { "type": ["string", "null"] },
+                "tool_response": { "type": ["object", "string", "null"] },
+                "tools": {
+                    "type": ["string", "array", "null"],
+                    "items": {
+                        "type": ["object", "string"],
+                        "properties": {},
+                        "additionalProperties": true
+                    }
+                },
+                "pass_condition": { "type": "string" },
+                "expression": { "type": "string" },
+                "rationale": { "type": "string" },
+                "max_chat_iters": { "type": ["integer", "null"] },
+                "break_on_tool_call": { "type": "boolean" }
+
+            },
+            "required": [
+                "name",
+                "category",
+                "subcategory",
+                "system_prompt",
+                "user_prompt",
+                "expression"
+            ],
+            "additionalProperties": false
+        }
+    }
+}
