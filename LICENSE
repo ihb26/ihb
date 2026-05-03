@@ -1,0 +1,39 @@
+# Licensing
+
+This repository contains two categories of content licensed under different terms.
+
+---
+
+## Code - Apache License 2.0
+
+All source code in this repository is licensed under the
+**Apache License, Version 2.0**.
+
+This includes:
+
+- `ihbenchmark/` — benchmark library source code
+- `ihbenchmark-vis/` — visualisation source code
+- `scripts/` — utility and evaluation scripts
+- `tests/` — unit tests
+- `config/` — configuration files
+- `pyproject.toml` and other build/packaging files
+
+Full license text: [`LICENSE_CODE`](LICENSE_CODE)
+
+---
+
+## Data - Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+
+All dataset and materials content in this repository is licensed under
+**Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**.
+
+This includes:
+
+- `data/` — benchmark dataset
+- `materials/` — model outputs, traces, evaluation results, analysis-ready result files
+
+Full license text: [`LICENSE_DATA`](LICENSE_DATA)
+
+---
+
+For questions about permitted use, please refer to the respective license texts linked above.
