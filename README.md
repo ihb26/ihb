@@ -103,9 +103,9 @@ Results from the paper are in `materials/`:
 
 | File | Contents |
 |------|----------|
-| `materials/results_full_XX_of_05.parquet` | Raw results including conversation traces and per-predicate judgements across both tracks and 37 model variants (split across 5 separate parquet files) |
-| `materials/results_simple.parquet` | Simplified and merged results in the same format produced by the post-processing scripts |
-| `materials/results_paper.parquet` | Simplified and merged results in the same format produced by the post-processing scripts with certain columns and terms renamed to match the terminology used by the paper |
+| `materials/results_full/results_full_XX_of_05.parquet` | Raw results including conversation traces and per-predicate judgements across both tracks and 37 model variants (split across 5 separate parquet files) |
+| `materials/results_postproc/results_simple.parquet` | Simplified and merged results in the same format produced by the post-processing scripts |
+| `materials/results_postproc/results_paper.parquet` | Simplified and merged results in the same format produced by the post-processing scripts with certain columns and terms renamed to match the terminology used by the paper |
 
 ---
 
