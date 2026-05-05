@@ -107,6 +107,8 @@ Results from the paper are in `materials/`:
 | `materials/results_postproc/results_simple.parquet` | Simplified and merged results in the same format produced by the post-processing scripts |
 | `materials/results_postproc/results_paper.parquet` | Simplified and merged results in the same format produced by the post-processing scripts with certain columns and terms renamed to match the terminology used by the paper |
 
+A script is also provided to replicate the tables from the paper: `scripts/replicate_paper_tables.py`.
+
 ---
 
 ## License
