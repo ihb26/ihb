@@ -8,6 +8,12 @@ IH-Benchmark (IHB) is a conflict-centered benchmark for evaluating instruction-h
 
 ### Setup
 
+Clone the `ihb` branch of this repository:
+
+```
+git clone -b ihb https://github.com/ihb26/ihb.git
+```
+
 Create venv and install requirements:
 
 ```
@@ -106,8 +112,11 @@ Results from the paper are in `materials/`:
 | `materials/results_full/results_full_XX_of_05.parquet` | Raw results including conversation traces and per-predicate judgements across both tracks and 37 model variants (split across 5 separate parquet files) |
 | `materials/results_postproc/results_simple.parquet` | Simplified and merged results in the same format produced by the post-processing scripts |
 | `materials/results_postproc/results_paper.parquet` | Simplified and merged results in the same format produced by the post-processing scripts with certain columns and terms renamed to match the terminology used by the paper |
+| `materials/results_variance/results_paper_var_XX.parquet` | Simplified and merged results (using the terminology of the paper) for additional benchmarks runs on a subset of models. Used to calculate run-to-run variance. |
 
-A script is also provided to replicate the tables from the paper: `scripts/replicate_paper_tables.py`.
+Scripts are also provided to:
+- Replicate the tables from the paper: `scripts/replicate_paper_tables.py`
+- Calculate run-to-run variance for a subset of models: `scripts/calculate_run_variance.py`
 
 ---
 
