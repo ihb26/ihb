@@ -17,11 +17,15 @@ class Result:
     model_name: str
     context: Context | None
     predicate_result: PredicateResult | None
-    messages: list[Message | dict[str, Any]] | None
+    messages: list[dict[str, Any]] | None
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    metadata: dict[str, Any] | None = None
 
 
 @dataclass
 class PromptSetResult:
+    run_idx: int
     name: str
     control_pass_rate: float
     controls: list[Result]

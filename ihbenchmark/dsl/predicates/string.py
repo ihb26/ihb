@@ -173,3 +173,19 @@ def matches(pattern: str) -> Predicate:
         ok=(re.search(pattern, ctx.content) is not None),
         name="matches"
     )
+
+
+def matches_more(pattern_a: str, pattern_b: str) -> Predicate:
+    """Returns true if `pattern_a` appears more often in the LLM output than `pattern_b`"""
+    def _inner(ctx: Context) -> PredicateResult:
+        count_a = len(re.findall(pattern_a, ctx.content))
+        count_b = len(re.findall(pattern_b, ctx.content))
+        return PredicateResult(
+            ok=(count_a > count_b),
+            name="matches_more",
+            metadata={
+                "count_a": count_a,
+                "count_b": count_b,
+            }
+        )
+    return _inner

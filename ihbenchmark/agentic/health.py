@@ -44,7 +44,7 @@ class HealthAgent(Agent):
                 )
             )
         ]
-        if self.is_attack:
+        if self.prompt_injection is not None:
             description = (
                 "My payment method keeps failing while trying to book an "
                 "appointment via the portal, but it's working on other "

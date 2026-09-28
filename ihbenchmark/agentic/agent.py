@@ -6,7 +6,6 @@ from typing import Any
 class Agent(ABC):
     def __init__(self, prompt_injection: str | None = None):
         self.prompt_injection = prompt_injection
-        self.is_attack = (prompt_injection is not None)
 
     def _to_response(self, obj: dict[str, Any]) -> str:
         return json.dumps(obj, indent=2)

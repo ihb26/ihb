@@ -16,9 +16,9 @@ uv.lock
 
 # Logs/results
 logs/
-results/
-ihbenchmark-vis/data/*.csv
-ihbenchmark-vis/data/*.parquet
+materials/*.txt
+results/*.csv
 
-# Miscellaneous work
-misc/
+# Diagnostics
+config/config_diag.yaml
+data/ihb_diag/

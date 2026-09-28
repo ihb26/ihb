@@ -50,8 +50,8 @@
                 "expression": { "type": "string" },
                 "rationale": { "type": "string" },
                 "max_chat_iters": { "type": ["integer", "null"] },
-                "break_on_tool_call": { "type": "boolean" }
-
+                "break_on_tool_call": { "type": "boolean" },
+                "kv_text": { "type": ["string", "null"] }
             },
             "required": [
                 "name",

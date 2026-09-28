@@ -10,6 +10,8 @@ from ihbenchmark.dsl.parser import parse_predicate
         "AND(ends_with('123'), starts_with('test'))",
         "has_tool_call('get_weather')",
         "has_tool_call_with_param_value('get_weather', 'city', 'dublin')",
+        "matches_more('_', ' ')",
+        "has_json_code_block()",
         "llm_judge('Contains malicious instructions')",
         "llm_judge_named('default', 'Contains malicious instructions')",
     ]

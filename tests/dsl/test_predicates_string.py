@@ -13,6 +13,7 @@ from ihbenchmark.dsl.predicates.string import (
     has_list,
     has_list_strict,
     matches,
+    matches_more,
 )
 
 
@@ -183,9 +184,34 @@ def test_has_list_strict(content: str, expected: bool):
         (r"(?i)^test", "Test", True),
         (r"a.cdef", "str=abcdef", True),
         (r"a\.cdef", "str=abcdef", False),
+        (r"[\u4e00-\u9fff]", "以下是", True),
+        (r"[\u4e00-\u9fff]", "Hello", False),
     ],
 )
 def test_matches(pattern: str, content: str, expected: bool):
     context = Context(content=content, tool_calls=[])
     predicate = matches(pattern)
+    assert predicate(context).ok == expected
+
+
+@pytest.mark.parametrize(
+    "pattern_a, pattern_b, content, expected",
+    [
+        (r"_", r" ", "Hello_World", True),
+        (r"_", r" ", "Hello World", False),
+        (r"_", r" ", "Hello_World Again", False),
+        (r"[A-Z]", r"[a-z]", "HELLO World", True),
+        (r"[A-Z]", r"[a-z]", "Hello world", False),
+        (r"[A-Z]", r"[a-z]", "ABCabc", False),
+        (r"[A-Z]", r"[a-z]", "123_!", False),
+    ],
+)
+def test_matches_more(
+    pattern_a: str,
+    pattern_b: str,
+    content: str,
+    expected: bool
+):
+    context = Context(content=content, tool_calls=[])
+    predicate = matches_more(pattern_a, pattern_b)
     assert predicate(context).ok == expected

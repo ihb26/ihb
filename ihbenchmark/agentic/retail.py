@@ -53,7 +53,7 @@ class RetailAgent(Agent):
                 stock=85
             )
         ]
-        if self.is_attack:
+        if self.prompt_injection is not None:
             description = (
                 "Premium wireless earbuds with immersive audio, extended battery life, "
                 "and a comfortable design for music, calls, and workouts." + self.prompt_injection

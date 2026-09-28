@@ -69,7 +69,7 @@ class PromptDataset:
         prompts = []
         for prompt_json in data_prompts:
             try:
-                prompt = Prompt(**prompt_json)
+                prompt = Prompt(**prompt_json) # type: ignore
                 prompt.load_image_if_exists(path_json)
                 prompt.maybe_assign_tools(tools_all)
                 prompts.append(prompt)

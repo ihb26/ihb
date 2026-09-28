@@ -68,13 +68,13 @@ class LLMJudge:
         message = choice.message
         logger.debug(f"(judge.{self.config.model.name}) {message=}")
 
-        return message.content
+        return message.content or ""
     
     def judge(
         self,
         objective: str,
         output: str
-    ) -> bool | tuple[bool, str, str]:
+    ) -> tuple[bool, str, str]:
         content = self._run_judge(objective, output)
         content = content.strip().lower()
         verdict = content in self.labels_pass

@@ -6,6 +6,7 @@ from typing import Any
 
 from ..agentic import init_agent
 from ..agentic.agent import Agent
+from ..config import DefensesConfig
 from ..dsl.parser import parse_predicate
 from ..dsl.predicates.predicate_types import Predicate
 
@@ -20,6 +21,7 @@ class Prompt:
     user_prompt: list[dict[str, Any]] | str | None
     expression: str
     # Optional fields
+    kv_text: str | None = None
     user_image_path: str | None = None
     tool_response: str | dict[str, str | dict[str, str]] | None = None
     tools: list[dict[str, Any] | str] | str | None = None
@@ -38,16 +40,7 @@ class Prompt:
         if (self.user_prompt is None) and (self.user_image_path is None):
             raise ValueError("One of `user_prompt` or `user_image_path` must be provided")
         
-        is_agent_tool = isinstance(self.tools, str)
-        is_agent_tool_resp = (
-            isinstance(self.tool_response, str) or (self.tool_response is None)
-        )
-        
-        if is_agent_tool and is_agent_tool_resp:
-            self._agent = init_agent(self.tools, self.tool_response)
-        
-        if (not is_agent_tool) and (self.tools is not None) and (self.tool_response is None):
-            raise ValueError("`tool_response` must be provided when `tools` is provided")
+        self.maybe_init_agent()
         
         self.predicate = parse_predicate(self.expression)
     
@@ -83,6 +76,14 @@ class Prompt:
             else:
                 raise ValueError(f"Prompt tool must be a dictionary or a string: {tool}")
 
+    def apply_defences_to_hardcoded_tool_responses(self, defenses: DefensesConfig | None) -> None:
+        if (defenses is None) or (not isinstance(self.user_prompt, list)):
+            return
+        
+        for message in self.user_prompt:
+            if (message["role"] == "tool") and defenses.spotlighting and (defenses.spotlighting_format is not None):
+                message["content"] = defenses.spotlighting_format.format(tool_response=message["content"])
+    
     def get_user_image(self) -> str | None:
         return self._user_image
     
@@ -123,6 +124,20 @@ class Prompt:
                 raise ValueError(f"Invalid `tool_response` configured for tool {tool_name}: {responses}")
         else:
             raise ValueError(f"Expected `tool_response` to be of type `str` or `dict`")
+
+    def maybe_init_agent(self) -> None:
+        self._agent = None
+
+        is_agent_tool = isinstance(self.tools, str)
+        is_agent_tool_resp = (
+            isinstance(self.tool_response, str) or (self.tool_response is None)
+        )
+        
+        if is_agent_tool and is_agent_tool_resp:
+            self._agent = init_agent(self.tools, self.tool_response)
+        
+        if (not is_agent_tool) and (self.tools is not None) and (self.tool_response is None):
+            raise ValueError("`tool_response` must be provided when `tools` is provided")
 
 
 @dataclass

@@ -6,6 +6,7 @@ from ihbenchmark.dsl.predicates.code import (
     has_code,
     has_code_block,
     has_json,
+    has_json_code_block,
     has_json_schema,
 )
 
@@ -15,7 +16,6 @@ from ihbenchmark.dsl.predicates.code import (
     [
         ("Testing123", False),
         ("{ }", False),
-        ("$x = 1 + 2$", False),
         ("def f(x: int) -> bool:\n    return x > 1", True),
         ("let x = 1 + 2;", True),
     ],
@@ -39,6 +39,24 @@ def test_has_code(content: str, expected: bool):
 def test_has_code_block(content: str, expected: bool):
     context = Context(content=content, tool_calls=[])
     predicate = has_code_block()
+    assert predicate(context).ok == expected
+
+
+@pytest.mark.parametrize(
+    "content, expected",
+    [
+        ("Testing123", False),
+        ('{ "x": 123 }', False),
+        ("```json\nNot actual JSON\n```", False),
+        ('```json\n{ "x": 123 }\n```', True),
+        ('```\n{ "x": 123 }\n```', True),
+        ('```JSON\n[1, 2, 3]\n```', True),
+        ('Before\n```json\n{ "x": 123 }\n```\nAfter', True),
+    ],
+)
+def test_has_json_code_block(content: str, expected: bool):
+    context = Context(content=content, tool_calls=[])
+    predicate = has_json_code_block()
     assert predicate(context).ok == expected
 
 

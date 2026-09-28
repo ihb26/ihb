@@ -12,7 +12,6 @@ All source code in this repository is licensed under the
 This includes:
 
 - `ihbenchmark/` — benchmark library source code
-- `ihbenchmark-vis/` — visualisation source code
 - `scripts/` — utility and evaluation scripts
 - `tests/` — unit tests
 - `config/` — configuration files
@@ -31,6 +30,7 @@ This includes:
 
 - `data/` — benchmark dataset
 - `materials/` — model outputs, traces, evaluation results, analysis-ready result files
+- `results/` — raw model results
 
 Full license text: [`LICENSE_DATA`](LICENSE_DATA)
 

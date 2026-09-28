@@ -1,3 +1,4 @@
+import json
 import re
 from typing import Any
 
@@ -7,6 +8,7 @@ from ..wrappers.code import (
     validate_schema,
     INCLUDE_CODE,
     PATTERN_CODE_BLOCK,
+    PATTERN_JSON_CODE_BLOCK,
     LLMJudgeCode,
 )
 
@@ -41,6 +43,25 @@ def has_code_block() -> Predicate:
         return PredicateResult(
             ok=(match is not None),
             name="has_code_block"
+        )
+    return _inner
+
+
+def has_json_code_block() -> Predicate:
+    """Returns true if the LLM output contains a markdown code block with valid JSON"""
+    def _inner(ctx: Context) -> PredicateResult:
+        for match in re.finditer(PATTERN_JSON_CODE_BLOCK, ctx.content):
+            try:
+                json.loads(match.group(1))
+                return PredicateResult(
+                    ok=True,
+                    name="has_json_code_block"
+                )
+            except json.JSONDecodeError:
+                pass
+        return PredicateResult(
+            ok=False,
+            name="has_json_code_block"
         )
     return _inner
 

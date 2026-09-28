@@ -45,6 +45,7 @@ class Judge:
         
         for judge_config in self.config.judges:
             category = judge_config.category
+            assert category is not None, "Category must be configured for each judge"
             configured_categories.add(category)
             judges[category] = LLMJudge(
                 self.config.timeout_judge,
@@ -58,9 +59,10 @@ class Judge:
 
         return (True, judges)
     
-    def save_results(self, results: list[JudgeResult]) -> None:
+    def save_results(self, results: list[JudgeResult | None]) -> None:
+        results_filt = [result for result in results if result is not None]
         ensure_result_dir_exists()
-        df = pd.DataFrame(list(map(asdict, results)))
+        df = pd.DataFrame(list(map(asdict, results_filt)))
         df.to_csv(get_result_path(), index=False)
 
     def run_full(self, save_results: bool = True) -> None:
@@ -70,7 +72,7 @@ class Judge:
             f"{Style.RESET_ALL}"
         )
 
-        results = [None] * len(self.dataset)
+        results: list[JudgeResult | None] = [None] * len(self.dataset)
         n_prompts = len(self.dataset)
         n_succ, n_fail, n_crsh = 0, 0, 0
 
@@ -113,7 +115,10 @@ class Judge:
             self.save_results(results)
 
     def _run_prompt(self, prompt: JudgePrompt) -> JudgeResult:
-        category = prompt.category if self.has_categories else KEY_DEFAULT
+        if self.has_categories and (prompt.category is not None):
+            category = prompt.category
+        else:
+            category = KEY_DEFAULT
         judge = self.judges.get(category)
         
         if judge is None:

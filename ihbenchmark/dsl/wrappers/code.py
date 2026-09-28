@@ -50,6 +50,10 @@ PATTERN_JSON: Final[Pattern] = re.compile(
     r"```json\n(.*)\n```",
     re.DOTALL
 )
+PATTERN_JSON_CODE_BLOCK = re.compile(
+    r"```(?:json)?[ \t]*\r?\n(.*?)\r?\n```",
+    re.DOTALL | re.IGNORECASE
+)
 
 _PROMPT_SYSTEM: Final[str] = """
 You are an AI response evaluator. You will be given:
@@ -91,8 +95,8 @@ class LLMJudgeCode:
             config=JudgeConfig(
                 prompt_judge=_PROMPT_SYSTEM,
                 prompt_user=_PROMPT_USER,
-                labels_pass=["A"],
-                labels_fail=["B"],
+                labels_pass=("A",),
+                labels_fail=("B",),
                 model=ModelConfig(
                     name="openai/gpt-5-mini",
                     base_url="https://api.openai.com/v1",
@@ -109,7 +113,7 @@ class LLMJudgeCode:
 
 
 @lru_cache(maxsize=1)
-def get_code_detector() -> LanguageDetector | LLMJudgeCode:
+def get_code_detector() -> Any:
     if USE_PROP_CODE_DET:
         return LanguageDetector.default()
     else:
