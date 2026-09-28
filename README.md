@@ -99,7 +99,7 @@ Results from the paper are in `materials/`:
 
 | File | Contents |
 |------|----------|
-| `results/results_full.zip` | Archive containing raw results including conversation traces and per-predicate judgements for 5 runs each across both tracks and 32 model variants (split across numerous CSV files) |
+| `results/results_full_XX.zip` | Archives containing raw results including conversation traces and per-predicate judgements for 5 runs each across both tracks and 32 model variants (split across numerous CSV files) |
 | `materials/results.csv` | Simplified and parsed results |
 | `materials/results_task_completion.csv` | Task completion analysis for a stratified sample of 10,000 successful UT scenarios |
 | `materials/AdditionalAnalysis.ipynb` | Jupyter notebook containing some high-level evaluation metrics and analysis |
