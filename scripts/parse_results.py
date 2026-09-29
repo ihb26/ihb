@@ -450,8 +450,6 @@ class ScenarioResult:
     def _handle_metadata(self, metadata_raw: str) -> None:
         if self.success:
             return
-        if (not self.crashed) and (not self.skipped):
-            return
         
         metadata: dict[str, str | None] = eval(metadata_raw)
         fail_reason = metadata.get("fail_reason")
@@ -461,7 +459,15 @@ class ScenarioResult:
             return
         elif fail_reason == "Empty response":
             self.is_empty = True
-            click.echo(f"Empty response for {self.model} {self.name}", err=True)
+            # click.echo(f"Empty response for {self.model} {self.name}", err=True)
+            return
+
+        # Skip if the scenario failed due to a judge issue
+        if fail_reason and ("reached while trying to call judge model" in fail_reason):
+            self.skipped = True
+            return
+
+        if (not self.crashed) and (not self.skipped):
             return
 
         if not crash_reason:
@@ -781,7 +787,7 @@ def compute_metrics(
 @click.option(
     "--task-completion",
     is_flag=True,
-    help="Export 10000 successful UT conflict responses for task judging"
+    help="Export 1000 successful UT conflict responses for task judging"
 )
 def main(
     paths: list[str],

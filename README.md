@@ -1,6 +1,6 @@
 # IH-Benchmark
 
-IH-Benchmark (IHB) is a conflict-centered benchmark for evaluating instruction-hierarchy robustness in large language models. It measures whether models preserve higher-priority instructions when lower-priority inputs conflict with them, across two hierarchy surfaces and 44 constraint families.
+IH-Benchmark (IHB) is a conflict-centered benchmark for evaluating instruction-hierarchy robustness in large language models. It measures whether models preserve higher-priority instructions when lower-priority inputs conflict with them, across two hierarchy surfaces and 7 constraint family groups.
 
 ---
 
