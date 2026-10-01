@@ -25,30 +25,30 @@ DELIVERY_VARIANTS: Final[list[str]] = ["D1", "D2", "D3", "D4"]
 
 SU_FAMILY_GROUPS: Final[list[str]] = [
     "Format Contract",
-    "Semantic Boundary",
     "Content Fidelity",
     "Disclosure Control",
     "Capability Authorization",
     "Parameter Authorization",
+    "Semantic Boundary",
 ]
 
 UT_FAMILY_GROUPS: Final[list[str]] = [
     "Format Contract",
     "Content Fidelity",
     "Disclosure Control",
-    "Task Integrity",
     "Capability Authorization",
     "Parameter Authorization",
+    "Task Integrity",
 ]
 
 
 def format_score(value: float, na: str = r"--", std_dev: float | None = None) -> str:
     if pd.isna(value):
         return na
-    score = r"\score"
+    score = f"{float(value) * 100:.1f}"
     if std_dev is not None and not pd.isna(std_dev):
-        score += f"[{float(std_dev) * 100:.1f}]"
-    return score + "{" + f"{round(float(value) * 100, 1):.1f}" + "}"
+        return rf"\scoreSD{{{score}}}{{{float(std_dev) * 100:.1f}}}"
+    return rf"\score{{{score}}}"
 
 
 def display_model(model: str, subset: bool = False) -> str:
@@ -115,7 +115,7 @@ def _sort_models(
         key=lambda model: (
             float("-inf")
             if pd.isna(_metric_value(metrics, model=model, **filters))
-            else round(_metric_value(metrics, model=model, **filters) * 100, 1)
+            else _metric_value(metrics, model=model, **filters)
         ),
         reverse=True,
     )
@@ -608,4 +608,217 @@ def delivery_variant_full_table(
     out.append(" & ".join(cells) + r" \\")
     out.append(r"\bottomrule")
     out.append(r"\end{tabular}")
+    return "\n".join(out)
+
+
+def track_family_group_table(
+    metrics_track: pd.DataFrame,
+    metrics_family_group: pd.DataFrame,
+    family_groups: list[str],
+    models: list[str],
+    average_models: list[str],
+) -> str:
+    headers = ["Model", "Track Average"] + family_groups
+    out = [
+        r"\begin{tabular}{lrrrrrrr}",
+        r"\toprule",
+        " & ".join(rf"\textbf{{{label}}}" for label in headers) + r" \\",
+        r"\midrule",
+    ]
+    for model in _sort_models(metrics_track, models) + [None]:
+        if model is None:
+            out.append(r"\midrule")
+        filters = {"models": average_models} if model is None else {"model": model}
+        cells = [model if model is not None else f"Average ({len(average_models)} configs.)"]
+        cells.append(_metric_score(metrics_track, stddev=True, **filters))
+        for family_group in family_groups:
+            cells.append(_metric_score(metrics_family_group, family_group=family_group, stddev=True, **filters))
+        out.append(" & ".join(cells) + r" \\")
+    out += [r"\bottomrule", r"\end{tabular}"]
+    return "\n".join(out)
+
+
+def paired_factor_table(
+    metrics_track_su: pd.DataFrame,
+    metrics_track_ut: pd.DataFrame,
+    metrics_su: pd.DataFrame,
+    metrics_ut: pd.DataFrame,
+    factor: str,
+    levels: list[str],
+    models: list[str],
+    average_models: list[str],
+) -> str:
+    n = len(levels) + 1
+    columns = "l" + "r" * len(levels)
+    headers = [r"\textbf{Model}"] + [rf"\textbf{{${level[0]}_{level[1:]}$}}" for level in levels]
+    out = [
+        rf"\begin{{tabular}}{{{columns}|{columns}}}",
+        r"\toprule",
+        rf"\multicolumn{{{n}}}{{c}}{{\SU{{}}}} & \multicolumn{{{n}}}{{c}}{{\UT{{}}}} \\",
+        rf"\cmidrule(lr){{1-{n}}} \cmidrule(lr){{{n + 1}-{2 * n}}}",
+        " & ".join(headers + headers) + r" \\",
+        r"\midrule",
+    ]
+    su_models = _sort_models(metrics_track_su, models)
+    ut_models = _sort_models(metrics_track_ut, models)
+    mean_label = f"Mean ({len(average_models)} configs.)" if len(models) == len(average_models) else f"Mean ({len(average_models)})"
+    for su_model, ut_model in list(zip(su_models, ut_models)) + [(None, None)]:
+        if su_model is None:
+            out.append(r"\midrule")
+        cells = []
+        for metrics, model in [(metrics_su, su_model), (metrics_ut, ut_model)]:
+            filters = {"models": average_models} if model is None else {"model": model}
+            cells.append(model if model is not None else mean_label)
+            for level in levels:
+                cells.append(_metric_score(metrics, stddev=True, **filters, **{factor: level}))
+        out.append(" & ".join(cells) + r" \\")
+    out += [r"\bottomrule", r"\end{tabular}"]
+    return "\n".join(out)
+
+
+def factor_table(
+    metrics_track: pd.DataFrame,
+    metrics: pd.DataFrame,
+    factor: str,
+    levels: list[str],
+    models: list[str],
+    average_models: list[str],
+) -> str:
+    headers = [r"\textbf{Model}"] + [rf"\textbf{{${level[0]}_{level[1:]}$}}" for level in levels]
+    out = [
+        r"\begin{tabular}{l" + "r" * len(levels) + "}",
+        r"\toprule",
+        " & ".join(headers) + r" \\",
+        r"\midrule",
+    ]
+    for model in _sort_models(metrics_track, models) + [None]:
+        if model is None:
+            out.append(r"\midrule")
+        filters = {"models": average_models} if model is None else {"model": model}
+        cells = [model if model is not None else f"Mean ({len(average_models)} configs.)"]
+        for level in levels:
+            cells.append(_metric_score(metrics, stddev=True, **filters, **{factor: level}))
+        out.append(" & ".join(cells) + r" \\")
+    out += [r"\bottomrule", r"\end{tabular}"]
+    return "\n".join(out)
+
+
+def conflict_family_group_table(
+    metrics_overall: pd.DataFrame,
+    metrics_track_su: pd.DataFrame,
+    metrics_track_ut: pd.DataFrame,
+    metrics_su: pd.DataFrame,
+    metrics_ut: pd.DataFrame,
+    models: list[str],
+    average_models: list[str],
+) -> str:
+    headers = ["Model", "Overall", "Average", "FC", "CF", "DC", "CA", "PA", "SB", "Average", "FC", "CF", "DC", "CA", "PA", "TI"]
+    out = [
+        r"\begin{tabular}{lr|rrrrrrr|rrrrrrr}",
+        r"\toprule",
+        r"& & \multicolumn{7}{c}{\SU{} Compliance (\%)} & \multicolumn{7}{c}{\UT{} Compliance (\%)} \\",
+        r"\cmidrule(lr){3-9} \cmidrule(lr){10-16}",
+        " & ".join(rf"\textbf{{{label}}}" for label in headers) + r" \\",
+        r"\midrule",
+    ]
+    for model in _sort_models(metrics_overall, models) + [None]:
+        if model is None:
+            out.append(r"\midrule")
+        filters = {"models": average_models} if model is None else {"model": model}
+        cells = [model if model is not None else f"Mean ({len(average_models)} configs.)"]
+        cells.append(_metric_score(metrics_overall, stddev=True, **filters))
+        for track, categories, groups in [(metrics_track_su, metrics_su, SU_FAMILY_GROUPS), (metrics_track_ut, metrics_ut, UT_FAMILY_GROUPS)]:
+            cells.append(_metric_score(track, stddev=True, **filters))
+            for family_group in groups:
+                cells.append(_metric_score(categories, family_group=family_group, stddev=True, **filters))
+        out.append(" & ".join(cells) + r" \\")
+    out += [r"\bottomrule", r"\end{tabular}"]
+    return "\n".join(out)
+
+
+def non_conflict_table(
+    metrics_overall: pd.DataFrame,
+    metrics_su: pd.DataFrame,
+    metrics_ut: pd.DataFrame,
+    models: list[str],
+    average_models: list[str],
+) -> str:
+    out = [
+        r"\begin{tabular}{lrr}",
+        r"\toprule",
+        r"\textbf{Model} & \textbf{\SU{}} & \textbf{\UT{}} \\",
+        r"\midrule",
+    ]
+    for model in _sort_models(metrics_overall, models) + [None]:
+        if model is None:
+            out.append(r"\midrule")
+        filters = {"models": average_models} if model is None else {"model": model}
+        cells = [model if model is not None else f"Mean ({len(average_models)} configs.)"]
+        cells += [_metric_score(metrics, stddev=True, **filters) for metrics in [metrics_su, metrics_ut]]
+        out.append(" & ".join(cells) + r" \\")
+    out += [r"\bottomrule", r"\end{tabular}"]
+    return "\n".join(out)
+
+
+def joint_factors_table(
+    metrics_overall: pd.DataFrame,
+    metrics_su: pd.DataFrame,
+    metrics_ut: pd.DataFrame,
+    metrics_phrasing_su: pd.DataFrame,
+    metrics_phrasing_ut: pd.DataFrame,
+    models: list[str],
+    average_models: list[str],
+) -> str:
+    headers = [r"\textbf{Model}"] + [r"\textbf{$L_1$}", r"\textbf{$L_2$}", r"\textbf{$L_3$}", r"\textbf{Average}"] * 4
+    out = [
+        r"\begin{tabular}{l|rrrr|rrrr|rrrr|rrrr}",
+        r"\toprule",
+        r"& \multicolumn{8}{c}{\SU{} Compliance (\%)} & \multicolumn{8}{c}{\UT{} Compliance (\%)} \\",
+        r"\cmidrule(lr){2-9} \cmidrule(lr){10-17}",
+        r"& \multicolumn{4}{c}{$P_1$} & \multicolumn{4}{c}{$P_2$} & \multicolumn{4}{c}{$P_1$} & \multicolumn{4}{c}{$P_2$} \\",
+        r"\cmidrule(lr){2-5} \cmidrule(lr){6-9} \cmidrule(lr){10-13} \cmidrule(lr){14-17}",
+        " & ".join(headers) + r" \\",
+        r"\midrule",
+    ]
+    for model in _sort_models(metrics_overall, models) + [None]:
+        if model is None:
+            out.append(r"\midrule")
+        filters = {"models": average_models} if model is None else {"model": model}
+        cells = [model if model is not None else f"Mean ({len(average_models)} configs.)"]
+        for metrics, phrasing_metrics in [(metrics_su, metrics_phrasing_su), (metrics_ut, metrics_phrasing_ut)]:
+            for phrasing in PROMPT_PHRASINGS:
+                for strictness in STRICTNESS_LEVELS:
+                    score = _metric_score(metrics, prompt_phrasing=phrasing, constraint_strictness=strictness, stddev=True, **filters)
+                    cells.append("---" if score == "--" else score)
+                cells.append(_metric_score(phrasing_metrics, prompt_phrasing=phrasing, stddev=True, **filters))
+        out.append(" & ".join(cells) + r" \\")
+    out += [r"\bottomrule", r"\end{tabular}"]
+    return "\n".join(out)
+
+
+def delivery_strictness_table(
+    metrics_track: pd.DataFrame,
+    metrics: pd.DataFrame,
+    models: list[str],
+    average_models: list[str],
+) -> str:
+    headers = [r"\textbf{Model}"] + [r"\textbf{$L_1$}", r"\textbf{$L_2$}", r"\textbf{$L_3$}"] * 4
+    out = [
+        r"\begin{tabular}{lrrr|rrr|rrr|rrr}",
+        r"\toprule",
+        r"& \multicolumn{3}{c}{$D_1$} & \multicolumn{3}{c}{$D_2$} & \multicolumn{3}{c}{$D_3$} & \multicolumn{3}{c}{$D_4$} \\",
+        r"\cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10} \cmidrule(lr){11-13}",
+        " & ".join(headers) + r" \\",
+        r"\midrule",
+    ]
+    for model in _sort_models(metrics_track, models) + [None]:
+        if model is None:
+            out.append(r"\midrule")
+        filters = {"models": average_models} if model is None else {"model": model}
+        cells = [model if model is not None else f"Mean ({len(average_models)} models)"]
+        for delivery in DELIVERY_VARIANTS:
+            for strictness in STRICTNESS_LEVELS:
+                cells.append(_metric_score(metrics, delivery_variant=delivery, constraint_strictness=strictness, stddev=True, **filters))
+        out.append(" & ".join(cells) + r" \\")
+    out += [r"\bottomrule", r"\end{tabular}"]
     return "\n".join(out)

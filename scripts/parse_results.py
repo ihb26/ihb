@@ -775,11 +775,6 @@ def compute_metrics(
     help="Regenerate results file"
 )
 @click.option(
-    "--stddev",
-    is_flag=True,
-    help="Include std dev values where relevant"
-)
-@click.option(
     "--filter",
     is_flag=True,
     help="Filter out certain simpler format contract families"
@@ -792,7 +787,6 @@ def compute_metrics(
 def main(
     paths: list[str],
     regen: bool,
-    stddev: bool,
     filter: bool,
     task_completion: bool
 ) -> None:
@@ -824,42 +818,17 @@ def main(
         results = filter_results(results)
 
     # BEGIN: AI generated code
-    # Overall: conflict + non-conflict
-    metrics_all = compute_metrics(results)
-    metrics_all_su = compute_metrics(results, track="system-user")
-    metrics_all_su_domain = compute_metrics(results, track="system-user", by_domain=True)
-    metrics_all_ut = compute_metrics(results, track="user-tool")
-    metrics_all_ut_domain = compute_metrics(results, track="user-tool", by_domain=True)
-
     # Main results: conflict only
     metrics_conflict = compute_metrics(results, presentation="conflict")
-    metrics_conflict_is_domain = compute_metrics(results, presentation="conflict", by_is_domain=True)
     metrics_conflict_su = compute_metrics(results, presentation="conflict", track="system-user")
     metrics_conflict_su_domain = compute_metrics(results, presentation="conflict", track="system-user", by_domain=True)
     metrics_conflict_ut = compute_metrics(results, presentation="conflict", track="user-tool")
     metrics_conflict_ut_domain = compute_metrics(results, presentation="conflict", track="user-tool", by_domain=True)
 
     # Overall: non-conflict only
-    metrics_non_conflict = compute_metrics(results, presentation="non-conflict")
     metrics_non_conflict_su = compute_metrics(results, presentation="non-conflict", track="system-user")
-    metrics_non_conflict_su_domain = compute_metrics(results, presentation="non-conflict", track="system-user", by_domain=True)
     metrics_non_conflict_ut = compute_metrics(results, presentation="non-conflict", track="user-tool")
-    metrics_non_conflict_ut_domain = compute_metrics(results, presentation="non-conflict", track="user-tool", by_domain=True)
-
-    # Constraint strictness
-    metrics_constraint_strictness_su = compute_metrics(results, presentation="conflict", track="system-user", by_is_domain=True, by_constraint_strictness=True)
-    metrics_constraint_strictness_ut = compute_metrics(results, presentation="conflict", track="user-tool", by_is_domain=True, by_constraint_strictness=True)
-
-    # Prompt phrasing + constraint strictness
-    metrics_prompt_phrasing_constraint_strictness_su = compute_metrics(results, presentation="conflict", track="system-user", by_is_domain=True, by_constraint_strictness=True, by_prompt_phrasing=True)
-    metrics_prompt_phrasing_constraint_strictness_ut = compute_metrics(results, presentation="conflict", track="user-tool", by_is_domain=True, by_constraint_strictness=True, by_prompt_phrasing=True)
-
-    # Prompt phrasing
-    metrics_prompt_phrasing = compute_metrics(results, presentation="conflict", track="system-user", by_is_domain=True, by_prompt_phrasing=True)
-
-    # Delivery variant
-    metrics_delivery_variant = compute_metrics(results, presentation="conflict", track="user-tool", by_is_domain=True, by_delivery_variant=True)
-
+    
     # Family group
     metrics_family_group_su = compute_metrics(results, presentation="conflict", track="system-user", by_family_group=True)
     metrics_family_group_ut = compute_metrics(results, presentation="conflict", track="user-tool", by_family_group=True)
@@ -867,39 +836,50 @@ def main(
     # Individual families
     metrics_family = compute_metrics(results, presentation="conflict", by_family=True)
 
-    # Family group variance
-    metrics_family_group_variance_su = compute_metrics(results, track="system-user", by_family_group=True)
-    metrics_family_group_variance_ut = compute_metrics(results, track="user-tool", by_family_group=True)
+    su_p1 = results[
+        (results["track"] == "system-user")
+        & (results["presentation"] == "conflict")
+        & (results["prompt_phrasing"] == "P1")
+    ].copy()
+    su_p1["base_name"] = su_p1["name"].str.replace(r"_(simple|hardened|refusal)_", "_", regex=True)
+    base_levels = su_p1.groupby("base_name")["constraint_strictness"].nunique()
+    shared_bases = base_levels[base_levels == 3].index
+    metrics_strictness_su = compute_metrics(su_p1[su_p1["base_name"].isin(shared_bases)], by_constraint_strictness=True)
+    metrics_strictness_ut = compute_metrics(results, presentation="conflict", track="user-tool", by_constraint_strictness=True)
+
+    su_shared_levels = results[results["constraint_strictness"].isin(["L1", "L2"])]
+    metrics_phrasing_su = compute_metrics(su_shared_levels, presentation="conflict", track="system-user", by_prompt_phrasing=True)
+    metrics_phrasing_ut = compute_metrics(results, presentation="conflict", track="user-tool", by_prompt_phrasing=True)
+    metrics_joint_su = compute_metrics(results, presentation="conflict", track="system-user", by_prompt_phrasing=True, by_constraint_strictness=True)
+    metrics_joint_ut = compute_metrics(results, presentation="conflict", track="user-tool", by_prompt_phrasing=True, by_constraint_strictness=True)
+    metrics_delivery = compute_metrics(results, presentation="conflict", track="user-tool", by_delivery_variant=True)
+    metrics_delivery_strictness = compute_metrics(results, presentation="conflict", track="user-tool", by_delivery_variant=True, by_constraint_strictness=True)
 
     tables = [
-        ("Table 1: Main results - conflict", latex_helpers.main_results_table(metrics_conflict, metrics_conflict_su, metrics_conflict_su_domain, metrics_conflict_ut, metrics_conflict_ut_domain, MODELS_PAPER_MAIN, MODELS_PAPER_ALL, subset_names=True, stddev=stddev)),
-        ("Table 2: Constraint strictness", latex_helpers.constraint_strictness_table(metrics_constraint_strictness_su, metrics_constraint_strictness_ut, MODELS_PAPER_MAIN, MODELS_PAPER_ALL)),
-        ("Table 3: Family groups", latex_helpers.family_group_table(metrics_conflict, metrics_family_group_su, metrics_family_group_ut, MODELS_PAPER_MAIN, MODELS_PAPER_ALL, selected=True)),
-        ("Table 4: Prompt phrasing", latex_helpers.prompt_phrasing_table(metrics_prompt_phrasing, MODELS_PAPER_MAIN, MODELS_PAPER_ALL)),
-        ("Table 5: Delivery variant", latex_helpers.delivery_variant_table(metrics_delivery_variant, MODELS_PAPER_MAIN, MODELS_PAPER_ALL)),
-        ("Appendix: Main results (all)", latex_helpers.main_results_table(metrics_all, metrics_all_su, metrics_all_su_domain, metrics_all_ut, metrics_all_ut_domain, MODELS_PAPER_ALL, MODELS_PAPER_ALL, stddev=stddev)),
-        ("Appendix: Main results (conflict)", latex_helpers.main_results_table(metrics_conflict, metrics_conflict_su, metrics_conflict_su_domain, metrics_conflict_ut, metrics_conflict_ut_domain, MODELS_PAPER_ALL, MODELS_PAPER_ALL, stddev=stddev)),
-        ("Appendix: Main results (non-conflict)", latex_helpers.main_results_table(metrics_non_conflict, metrics_non_conflict_su, metrics_non_conflict_su_domain, metrics_non_conflict_ut, metrics_non_conflict_ut_domain, MODELS_PAPER_ALL, MODELS_PAPER_ALL, stddev=stddev)),
-        ("Appendix: Constraint strictness (generic)", latex_helpers.constraint_strictness_full_table(metrics_constraint_strictness_su, metrics_constraint_strictness_ut, MODELS_PAPER_ALL, MODELS_PAPER_ALL, is_domain=False)),
-        ("Appendix: Constraint strictness (domain)", latex_helpers.constraint_strictness_full_table(metrics_constraint_strictness_su, metrics_constraint_strictness_ut, MODELS_PAPER_ALL, MODELS_PAPER_ALL, is_domain=True)),
-        ("Appendix: Prompt phrasing + constraint strictness (generic)", latex_helpers.prompt_phrasing_constraint_strictness_table(metrics_conflict_is_domain, metrics_prompt_phrasing_constraint_strictness_su, metrics_prompt_phrasing_constraint_strictness_ut, MODELS_PAPER_ALL, MODELS_PAPER_ALL, is_domain=False)),
-        ("Appendix: Prompt phrasing + constraint strictness (domain)", latex_helpers.prompt_phrasing_constraint_strictness_table(metrics_conflict_is_domain, metrics_prompt_phrasing_constraint_strictness_su, metrics_prompt_phrasing_constraint_strictness_ut, MODELS_PAPER_ALL, MODELS_PAPER_ALL, is_domain=True)),
-        ("Appendix: Prompt phrasing", latex_helpers.prompt_phrasing_full_table(metrics_prompt_phrasing, MODELS_PAPER_ALL, MODELS_PAPER_ALL)),
-        ("Appendix: Delivery variant", latex_helpers.delivery_variant_full_table(metrics_delivery_variant, MODELS_PAPER_ALL, MODELS_PAPER_ALL)),
-        ("Appendix: Family groups", latex_helpers.family_group_table(metrics_conflict, metrics_family_group_su, metrics_family_group_ut, MODELS_PAPER_ALL, MODELS_PAPER_ALL)),
+        ("Table II: SU family groups", latex_helpers.track_family_group_table(metrics_conflict_su, metrics_family_group_su, latex_helpers.SU_FAMILY_GROUPS, MODELS_PAPER_MAIN, MODELS_PAPER_ALL)),
+        ("Table III: UT family groups", latex_helpers.track_family_group_table(metrics_conflict_ut, metrics_family_group_ut, latex_helpers.UT_FAMILY_GROUPS, MODELS_PAPER_MAIN, MODELS_PAPER_ALL)),
+        ("Table IV: Constraint strictness", latex_helpers.paired_factor_table(metrics_conflict_su, metrics_conflict_ut, metrics_strictness_su, metrics_strictness_ut, "constraint_strictness", latex_helpers.STRICTNESS_LEVELS, MODELS_PAPER_MAIN, MODELS_PAPER_ALL)),
+        ("Table V: Prompt phrasing", latex_helpers.paired_factor_table(metrics_conflict_su, metrics_conflict_ut, metrics_phrasing_su, metrics_phrasing_ut, "prompt_phrasing", latex_helpers.PROMPT_PHRASINGS, MODELS_PAPER_MAIN, MODELS_PAPER_ALL)),
+        ("Table VI: Delivery variant", latex_helpers.factor_table(metrics_conflict_ut, metrics_delivery, "delivery_variant", latex_helpers.DELIVERY_VARIANTS, MODELS_PAPER_MAIN, MODELS_PAPER_ALL)),
+        ("Table XIV (appendix): Conflict family groups", latex_helpers.conflict_family_group_table(metrics_conflict, metrics_conflict_su, metrics_conflict_ut, metrics_family_group_su, metrics_family_group_ut, MODELS_PAPER_ALL, MODELS_PAPER_ALL)),
+        ("Table XV (appendix): Non-conflict controls", latex_helpers.non_conflict_table(metrics_conflict, metrics_non_conflict_su, metrics_non_conflict_ut, MODELS_PAPER_ALL, MODELS_PAPER_ALL)),
+        ("Table XVI (appendix): Constraint strictness", latex_helpers.paired_factor_table(metrics_conflict_su, metrics_conflict_ut, metrics_strictness_su, metrics_strictness_ut, "constraint_strictness", latex_helpers.STRICTNESS_LEVELS, MODELS_PAPER_ALL, MODELS_PAPER_ALL)),
+        ("Table XVII (appendix): Prompt phrasing and constraint strictness", latex_helpers.joint_factors_table(metrics_conflict, metrics_joint_su, metrics_joint_ut, metrics_phrasing_su, metrics_phrasing_ut, MODELS_PAPER_ALL, MODELS_PAPER_ALL)),
+        ("Table XVIII (appendix): Delivery variant and constraint strictness", latex_helpers.delivery_strictness_table(metrics_conflict_ut, metrics_delivery_strictness, MODELS_PAPER_ALL, MODELS_PAPER_ALL)),
+        ("Figure 2 Data: Main results (conflict)", latex_helpers.main_results_table(metrics_conflict, metrics_conflict_su, metrics_conflict_su_domain, metrics_conflict_ut, metrics_conflict_ut_domain, MODELS_PAPER_ALL, MODELS_PAPER_ALL, stddev=True)),
         ("Extras: Average results by family (conflict)", latex_helpers.family_average_table(metrics_family, MODELS_PAPER_ALL)),
     ]
     # END: AI generated code
 
-    path_tables = DIR_DST / ("tables_stddev.txt" if stddev else "tables.txt")
+    path_tables = DIR_DST / "tables.txt"
     with open(path_tables, "w+") as f:
         for label, table in tables:
-            f.write(f"<================= {label} =================>\n")
+            f.write(f"% <================= {label} =================>\n")
             f.write(table)
             f.write("\n\n")
 
 
 if __name__ == "__main__":
-    # NOTE: you can just run `python scripts/parse_results.py -p results` (assuming all the csv files are in the `results` directory)
+    # NOTE: you can just run `python scripts/parse_results.py -p results --filter` (assuming all the csv files are in the `results` directory)
     _init_scenario_judge_map()
     main()

@@ -75,7 +75,7 @@ Ensure `results/results_full.zip` has been extracted.
 Regenerate the `materials/results.csv` file:
 
 ```
-python ./scripts/parse_results.py -p results/ --regen --stddev --filter
+python ./scripts/parse_results.py -p results/ --regen --filter
 ```
 
 ---
