@@ -821,9 +821,7 @@ def main(
     # Main results: conflict only
     metrics_conflict = compute_metrics(results, presentation="conflict")
     metrics_conflict_su = compute_metrics(results, presentation="conflict", track="system-user")
-    metrics_conflict_su_domain = compute_metrics(results, presentation="conflict", track="system-user", by_domain=True)
     metrics_conflict_ut = compute_metrics(results, presentation="conflict", track="user-tool")
-    metrics_conflict_ut_domain = compute_metrics(results, presentation="conflict", track="user-tool", by_domain=True)
 
     # Overall: non-conflict only
     metrics_non_conflict_su = compute_metrics(results, presentation="non-conflict", track="system-user")
@@ -866,7 +864,7 @@ def main(
         ("Table XVI (appendix): Constraint strictness", latex_helpers.paired_factor_table(metrics_conflict_su, metrics_conflict_ut, metrics_strictness_su, metrics_strictness_ut, "constraint_strictness", latex_helpers.STRICTNESS_LEVELS, MODELS_PAPER_ALL, MODELS_PAPER_ALL)),
         ("Table XVII (appendix): Prompt phrasing and constraint strictness", latex_helpers.joint_factors_table(metrics_conflict, metrics_joint_su, metrics_joint_ut, metrics_phrasing_su, metrics_phrasing_ut, MODELS_PAPER_ALL, MODELS_PAPER_ALL)),
         ("Table XVIII (appendix): Delivery variant and constraint strictness", latex_helpers.delivery_strictness_table(metrics_conflict_ut, metrics_delivery_strictness, MODELS_PAPER_ALL, MODELS_PAPER_ALL)),
-        ("Figure 2 Data: Main results (conflict)", latex_helpers.main_results_table(metrics_conflict, metrics_conflict_su, metrics_conflict_su_domain, metrics_conflict_ut, metrics_conflict_ut_domain, MODELS_PAPER_ALL, MODELS_PAPER_ALL, stddev=True)),
+        ("Figure 2 Data: Main results (conflict)", latex_helpers.main_results_table(metrics_conflict, metrics_conflict_su, metrics_conflict_ut, MODELS_PAPER_ALL, MODELS_PAPER_ALL, stddev=True)),
         ("Extras: Average results by family (conflict)", latex_helpers.family_average_table(metrics_family, MODELS_PAPER_ALL)),
     ]
     # END: AI generated code

@@ -5,20 +5,6 @@ from typing import Final
 import pandas as pd
 
 
-SU_DOMAINS: Final[list[tuple[str, str]]] = [
-    ("General", "generic"),
-    ("Health", "health"),
-    ("Retail", "retail"),
-    ("Finance", "finance"),
-]
-
-UT_DOMAINS: Final[list[tuple[str, str]]] = [
-    ("General", "generic"),
-    ("Health", "health"),
-    ("Retail", "retail"),
-    ("Coding", "coding"),
-]
-
 STRICTNESS_LEVELS: Final[list[str]] = ["L1", "L2", "L3"]
 PROMPT_PHRASINGS: Final[list[str]] = ["P1", "P2"]
 DELIVERY_VARIANTS: Final[list[str]] = ["D1", "D2", "D3", "D4"]
@@ -135,9 +121,7 @@ def _main_results_row(
     label: str,
     metrics_overall: pd.DataFrame,
     metrics_su: pd.DataFrame,
-    metrics_su_domain: pd.DataFrame,
     metrics_ut: pd.DataFrame,
-    metrics_ut_domain: pd.DataFrame,
     model: str | None = None,
     models: list[str] | None = None,
     stddev: bool = False,
@@ -146,53 +130,36 @@ def _main_results_row(
         label,
         _metric_score(metrics_overall, model=model, models=models, stddev=stddev),
         _metric_score(metrics_su, model=model, models=models, stddev=stddev),
+        _metric_score(metrics_ut, model=model, models=models, stddev=stddev),
     ]
-    for _, domain in SU_DOMAINS:
-        cells.append(_metric_score(metrics_su_domain, model=model, models=models, domain=domain, stddev=stddev))
-    cells.append(_metric_score(metrics_ut, model=model, models=models, stddev=stddev))
-    for _, domain in UT_DOMAINS:
-        cells.append(_metric_score(metrics_ut_domain, model=model, models=models, domain=domain, stddev=stddev))
     return " & ".join(cells) + r" \\"
 
 
 def main_results_table(
     metrics_overall: pd.DataFrame,
     metrics_su: pd.DataFrame,
-    metrics_su_domain: pd.DataFrame,
     metrics_ut: pd.DataFrame,
-    metrics_ut_domain: pd.DataFrame,
     models: list[str],
     average_models: list[str],
     subset_names: bool = False,
     stddev: bool = False,
 ) -> str:
     out = [
-        r"\begin{tabular}{l r @{\hspace{3pt}\vrule width 0.3pt\hspace{3pt}} rrrrr @{\hspace{3pt}\vrule width 0.3pt\hspace{3pt}} rrrrr}",
+        r"\begin{tabular}{lrrr}",
         r"\toprule",
-        r"& & \multicolumn{5}{c}{\SU Compliance (\%)}",
-        r"  & \multicolumn{5}{c}{\UT Compliance (\%)} \\",
-        r"\cmidrule(lr){3-7} \cmidrule(lr){8-12}",
         r"\textbf{Model}",
         r"& \textbf{Overall}",
-        r"& \textbf{Average}",
-        r"& \textbf{General}",
-        r"& \textbf{Health}",
-        r"& \textbf{Retail}",
-        r"& \textbf{Finance}",
-        r"& \textbf{Average}",
-        r"& \textbf{General}",
-        r"& \textbf{Health}",
-        r"& \textbf{Retail}",
-        r"& \textbf{Coding} \\",
+        r"& \textbf{\SU{} Average}",
+        r"& \textbf{\UT{} Average} \\",
         r"\midrule",
     ]
     
     for model in _sort_models(metrics_overall, models):
-        out.append(_main_results_row(display_model(model, subset_names), metrics_overall, metrics_su, metrics_su_domain, metrics_ut, metrics_ut_domain, model=model, stddev=stddev))
+        out.append(_main_results_row(display_model(model, subset_names), metrics_overall, metrics_su, metrics_ut, model=model, stddev=stddev))
 
     average_models = _available_models(metrics_overall, average_models)
     out.append(r"\midrule")
-    out.append(_main_results_row(f"Average ({len(average_models)} models)", metrics_overall, metrics_su, metrics_su_domain, metrics_ut, metrics_ut_domain, models=average_models, stddev=stddev))
+    out.append(_main_results_row(f"Average ({len(average_models)} models)", metrics_overall, metrics_su, metrics_ut, models=average_models, stddev=stddev))
     out.append(r"\bottomrule")
     out.append(r"\end{tabular}")
     return "\n".join(out)
